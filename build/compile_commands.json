@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/workspace/SFND_2D_Feature_Matching/build",
+  "command": "/usr/bin/c++   -isystem /usr/local/include/opencv4  -g   -std=c++11 -o CMakeFiles/2D_feature_tracking.dir/src/matching2D_Student.cpp.o -c /home/workspace/SFND_2D_Feature_Matching/src/matching2D_Student.cpp",
+  "file": "/home/workspace/SFND_2D_Feature_Matching/src/matching2D_Student.cpp"
+},
+{
+  "directory": "/home/workspace/SFND_2D_Feature_Matching/build",
+  "command": "/usr/bin/c++   -isystem /usr/local/include/opencv4  -g   -std=c++11 -o CMakeFiles/2D_feature_tracking.dir/src/MidTermProject_Camera_Student.cpp.o -c /home/workspace/SFND_2D_Feature_Matching/src/MidTermProject_Camera_Student.cpp",
+  "file": "/home/workspace/SFND_2D_Feature_Matching/src/MidTermProject_Camera_Student.cpp"
+}
+]
