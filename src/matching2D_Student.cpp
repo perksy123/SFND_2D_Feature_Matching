@@ -170,6 +170,8 @@ void detKeypointsHarris(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool
 }
 
 // Keypoint detector for FAST, BRISK, ORB, AKAZE, FREAK & SIFT
+// Note: Although requested the FREAK detector doesn't appear to be implemented in the opencv library and
+// using it causes an exception.
 void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std::string detectorType, bool bVis)
 {
     if (detectorType.compare("FAST") == 0)

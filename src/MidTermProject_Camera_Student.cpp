@@ -109,10 +109,23 @@ int main(int argc, const char *argv[])
 
         // only keep keypoints on the preceding vehicle
         bool bFocusOnVehicle = true;
+        //                   x    y    wid  Hei
         cv::Rect vehicleRect(535, 180, 180, 150);
+//        cv::Rect vehicleRect(550, 180, 150, 150);
         if (bFocusOnVehicle)
         {
-            // ...
+            std::vector<cv::KeyPoint> filtered;
+            for (std::vector<cv::KeyPoint>::iterator it = keypoints.begin(); it != keypoints.end(); ++it)
+            {
+                cv::KeyPoint &kpt = *it;
+                if ( (kpt.pt.x > vehicleRect.x && kpt.pt.x < (vehicleRect.x + vehicleRect.width)) &&
+                     (kpt.pt.y > vehicleRect.y && kpt.pt.y < (vehicleRect.y + vehicleRect.height)) )
+                {
+                    filtered.push_back(kpt);
+                }
+            }
+
+            keypoints = filtered;
         }
 
         //// EOF STUDENT ASSIGNMENT
