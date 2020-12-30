@@ -8,11 +8,9 @@ class RingBuffer
 
         explicit RingBuffer(int size)
         : Size(size),
-            Count(0),
-            Buffer(std::vector<T>())
-            {
-
-            }
+          Buffer(std::vector<T>())
+        {
+        }
 
         ~RingBuffer() { }
 
@@ -20,10 +18,9 @@ class RingBuffer
         // use of end() vector iterators. 
         void push_back(T &item)
         {
-            if (Count < Size)
+            if (Buffer.size() < Size)
             {
                 Buffer.push_back(item);
-                Count++;
             }
             else 
             {
@@ -35,14 +32,13 @@ class RingBuffer
             }
         }
 
-        int size() const { return Count; }
+        int size() const { return Buffer.size(); }
         typename std::vector<T>::iterator end() { return Buffer.end(); }
         typename std::vector<T>::const_iterator end() const { return Buffer.end(); }
 
     private:
 
         int Size;
-        int Count;
         typename std::vector<T> Buffer;
 
 };
