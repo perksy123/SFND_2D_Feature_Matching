@@ -6,6 +6,42 @@
 
 #IncludeRegexTransform: 
 
+/home/workspace/SFND_2D_Feature_Matching/src/MidTermProject_Camera_Student.cpp
+iostream
+-
+fstream
+-
+sstream
+-
+iomanip
+-
+vector
+-
+cmath
+-
+limits
+-
+opencv2/core.hpp
+-
+opencv2/highgui/highgui.hpp
+-
+opencv2/imgproc/imgproc.hpp
+-
+opencv2/features2d.hpp
+-
+opencv2/xfeatures2d.hpp
+-
+opencv2/xfeatures2d/nonfree.hpp
+-
+dataStructures.h
+/home/workspace/SFND_2D_Feature_Matching/src/dataStructures.h
+matching2D.hpp
+/home/workspace/SFND_2D_Feature_Matching/src/matching2D.hpp
+RingBuffer.h
+/home/workspace/SFND_2D_Feature_Matching/src/RingBuffer.h
+
+/home/workspace/SFND_2D_Feature_Matching/src/RingBuffer.h
+
 /home/workspace/SFND_2D_Feature_Matching/src/dataStructures.h
 vector
 -
@@ -41,12 +77,6 @@ opencv2/xfeatures2d/nonfree.hpp
 -
 dataStructures.h
 /home/workspace/SFND_2D_Feature_Matching/src/dataStructures.h
-
-/home/workspace/SFND_2D_Feature_Matching/src/matching2D_Student.cpp
-numeric
--
-matching2D.hpp
-/home/workspace/SFND_2D_Feature_Matching/src/matching2D.hpp
 
 /usr/local/include/opencv4/opencv2/calib3d.hpp
 opencv2/core.hpp
