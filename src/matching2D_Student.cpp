@@ -20,7 +20,13 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
     }
     else if (matcherType.compare("MAT_FLANN") == 0)
     {
-        // ...
+        if (descSource.type() != CV_32F)
+        { // OpenCV bug workaround : convert binary descriptors to floating point due to a bug in current OpenCV implementation
+            descSource.convertTo(descSource, CV_32F);
+            descRef.convertTo(descRef, CV_32F);
+        }
+
+        matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
     }
 
     // perform matching task
@@ -32,7 +38,18 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
     else if (selectorType.compare("SEL_KNN") == 0)
     { // k nearest neighbors (k=2)
 
-        // ...
+        vector<vector<cv::DMatch>> kMatches;
+        matcher->knnMatch(descSource, descRef, kMatches, 2);
+    
+        double minDescriptorDistanceRatio = 0.8;
+        for (vector<vector<cv::DMatch>>::iterator it = kMatches.begin(); it != kMatches.end(); ++it)
+        {
+            // Only accept if the descriptor distance ratio is lower (i.e the match is better) than the above tolerance
+            if ((*it)[0].distance < minDescriptorDistanceRatio * (*it)[1].distance)
+            {
+                matches.push_back((*it)[0]);
+            } 
+        }
     }
 }
 
@@ -52,8 +69,27 @@ void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descr
     }
     else
     {
-
-        //...
+        // BRIEF, ORB, FREAK, AKAZE, SIFT
+        if (descriptorType.compare("BRIEF") == 0)
+        {
+            extractor = cv::xfeatures2d::BriefDescriptorExtractor::create();
+        }
+        else if (descriptorType.compare("ORB") == 0)
+        {
+            extractor = cv::ORB::create();
+        }
+        else if (descriptorType.compare("FREAK") == 0)
+        {
+            extractor = cv::xfeatures2d::FREAK::create();
+        }
+        else if (descriptorType.compare("AKAZE") == 0)
+        {
+            extractor = cv::AKAZE::create();
+        }
+        else if (descriptorType.compare("SIFT") == 0)
+        {
+            extractor = cv::xfeatures2d::SiftDescriptorExtractor::create();
+        }
     }
 
     // perform feature description
@@ -174,36 +210,32 @@ void detKeypointsHarris(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool
 // using it causes an exception.
 void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std::string detectorType, bool bVis)
 {
+    cv::Ptr<cv::FeatureDetector> detector;
     if (detectorType.compare("FAST") == 0)
     {
-        cv::Ptr<cv::FeatureDetector> det = cv::FastFeatureDetector::create(30, true, cv::FastFeatureDetector::TYPE_9_16);
-        det->detect(img, keypoints);
+        detector = cv::FastFeatureDetector::create(30, true, cv::FastFeatureDetector::TYPE_9_16);
     }
     else if (detectorType.compare("BRISK") == 0)
     {
-        cv::Ptr<cv::FeatureDetector> detector = cv::BRISK::create();
-        detector->detect(img, keypoints);
+        detector = cv::BRISK::create();
     }
     else if (detectorType.compare("ORB") == 0)
     {
-        cv::Ptr<cv::FeatureDetector> detector = cv::ORB::create();
-        detector->detect(img, keypoints);
+        detector = cv::ORB::create();
     }
     else if (detectorType.compare("AKAZE") == 0)
     {
-        cv::Ptr<cv::FeatureDetector> detector = cv::AKAZE::create();
-        detector->detect(img, keypoints);
+        detector = cv::AKAZE::create();
     }
     else if (detectorType.compare("FREAK") == 0)
     {
-        cv::Ptr<cv::FeatureDetector> detector = cv::xfeatures2d::FREAK::create();
-        detector->detect(img, keypoints);
+        detector = cv::xfeatures2d::FREAK::create();
     }
     else if (detectorType.compare("SIFT") == 0)
     {
-        cv::Ptr<cv::FeatureDetector> detector = cv::xfeatures2d::SIFT::create();
-        detector->detect(img, keypoints);
+        detector = cv::xfeatures2d::SIFT::create();
     }
+    detector->detect(img, keypoints);
 
     // visualize results
     if (bVis)
