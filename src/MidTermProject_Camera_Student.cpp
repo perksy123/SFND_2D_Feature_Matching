@@ -22,7 +22,7 @@ using namespace std;
 #define RUN_AS_PERFORMANCE_EVALUATION
 
 #ifdef RUN_AS_PERFORMANCE_EVALUATION
-std::vector<int> ProcessImages(string & detectorType, string &descriptorType)
+std::vector<int> ProcessImages(string & detectorType, string &descriptorType, ofstream &resultsFile)
 {
     /* INIT VARIABLES AND DATA STRUCTURES */
 
@@ -77,7 +77,7 @@ std::vector<int> ProcessImages(string & detectorType, string &descriptorType)
         //// STUDENT ASSIGNMENT
         //// TASK MP.2 -> add the following keypoint detectors in file matching2D.cpp and enable string-based selection based on detectorType
         //// -> HARRIS, FAST, BRISK, ORB, AKAZE, SIFT
-
+        double t = (double)cv::getTickCount();
         if (detectorType.compare("SHITOMASI") == 0)
         {
             detKeypointsShiTomasi(keypoints, imgGray, false);
@@ -91,9 +91,12 @@ std::vector<int> ProcessImages(string & detectorType, string &descriptorType)
             else
             {
                 detKeypointsModern(keypoints,imgGray, detectorType, false);
-            }
-            
+            }            
         }
+        t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+        cout << detectorType << " KeyPoint Detection in " << 1000 * t / 1.0 << " ms" << endl;
+        resultsFile << detectorType << " KeyPoint Detection in " << 1000 * t / 1.0 << " ms" << endl;
+
         //// EOF STUDENT ASSIGNMENT
 
         //// STUDENT ASSIGNMENT
@@ -149,7 +152,11 @@ std::vector<int> ProcessImages(string & detectorType, string &descriptorType)
         //// -> BRIEF, ORB, FREAK, AKAZE, SIFT
 
         cv::Mat descriptors;
+        t = (double)cv::getTickCount();
         descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
+        t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+        resultsFile << descriptorType << " descriptor extraction in " << 1000 * t / 1.0 << " ms" << endl;
+
         //// EOF STUDENT ASSIGNMENT
 
         // push descriptors for current frame to end of data buffer
@@ -238,14 +245,15 @@ int main(int argc, const char *argv[])
 #ifdef RUN_AS_PERFORMANCE_EVALUATION
     std::vector<string> detectorTypes = {"HARRIS", "FAST", "BRISK", "ORB", "AKAZE", "SIFT"};
     std::vector<string> descriptorTypes = {"BRISK", "BRIEF", "ORB", "AKAZE", "SIFT"};   // Missing FREAK as I'm getting 'Not Implemented' exception
-
+    ofstream resultsFile;
+    resultsFile.open("Results.dat");
     for (std::vector<string>::iterator detectorIt = detectorTypes.begin(); detectorIt != detectorTypes.end(); ++detectorIt)
     {
         string detectorType = *detectorIt;
         for (std::vector<string>::iterator descriptorIt = descriptorTypes.begin(); descriptorIt != descriptorTypes.end(); ++descriptorIt)
         {
             string descriptorType = *descriptorIt;
-            if ( !((detectorType.compare("HARRIS") == 0 &&
+            if ( !((detectorType.compare("HARRIS") == 0 &&      // I get a core dump when I try any of these combinations
                    (descriptorType.compare("AKAZE") == 0 || descriptorType.compare("SIFT") == 0)) ||
                    (detectorType.compare("FAST") == 0 &&
                    (descriptorType.compare("ORB") == 0 || descriptorType.compare("AKAZE") == 0 || descriptorType.compare("SIFT") == 0)) ||
@@ -259,13 +267,16 @@ int main(int argc, const char *argv[])
                    (descriptorType.compare("ORB") == 0 || descriptorType.compare("AKAZE") == 0 || descriptorType.compare("SIFT") == 0)))
                    )
             {
-                std::vector<int> matchCount = ProcessImages(detectorType, descriptorType);
+                std::vector<int> matchCount = ProcessImages(detectorType, descriptorType, resultsFile);
                 cout << "Detector = " << detectorType << ", Descriptor = " << descriptorType << ", Frame Matches = ";
+                resultsFile << "Detector = " << detectorType << ", Descriptor = " << descriptorType << ", Frame Matches = ";
                 for (std::vector<int>::iterator it = matchCount.begin(); it != matchCount.end(); ++it)
                 {
                     cout << *it << ", ";
+                    resultsFile << *it << ", ";
                 }
                 cout << endl;
+                resultsFile << endl;
             }
         }
     }
