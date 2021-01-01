@@ -22,7 +22,7 @@ using namespace std;
 #define RUN_AS_PERFORMANCE_EVALUATION
 
 #ifdef RUN_AS_PERFORMANCE_EVALUATION
-std::tuple<std::vector<int>, std::vector<double>, std::vector<double>> ProcessImages(string & detectorType, string &descriptorType)
+std::tuple<std::vector<int>, std::vector<double>, std::vector<double>> ProcessImages(string & detectorType, string &descType)
 {
     /* INIT VARIABLES AND DATA STRUCTURES */
 
@@ -128,7 +128,7 @@ std::tuple<std::vector<int>, std::vector<double>, std::vector<double>> ProcessIm
 
         cv::Mat descriptors;
         t = (double)cv::getTickCount();
-        descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
+        descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descType);
         t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
         descriptorTimes.push_back(1000 * t / 1.0);
 
@@ -137,7 +137,6 @@ std::tuple<std::vector<int>, std::vector<double>, std::vector<double>> ProcessIm
 
         if (dataBuffer.size() > 1) // wait until at least two images have been processed
         {
-
             /* MATCH KEYPOINT DESCRIPTORS */
 
             vector<cv::DMatch> matches;
@@ -202,7 +201,6 @@ int main(int argc, const char *argv[])
 
     // misc
     int dataBufferSize = 2;       // no. of images which are held in memory (ring buffer) at the same time
-//    vector<DataFrame> dataBuffer; // list of data frames which are held in memory at the same time
     RingBuffer<DataFrame> dataBuffer(dataBufferSize);
     bool bVis = false;            // visualize results
 #endif
@@ -224,7 +222,7 @@ int main(int argc, const char *argv[])
             if ( !((detectorType.compare("HARRIS") == 0 &&      // I get a core dump when I try any of these combinations
                    (descriptorType.compare("AKAZE") == 0 || descriptorType.compare("SIFT") == 0)) ||
                    (detectorType.compare("FAST") == 0 &&
-                   (descriptorType.compare("ORB") == 0 || descriptorType.compare("AKAZE") == 0 || descriptorType.compare("SIFT") == 0)) ||
+                   (descriptorType.compare("AKAZE") == 0 || descriptorType.compare("SIFT") == 0)) ||
                    (detectorType.compare("BRISK") == 0 &&
                    (descriptorType.compare("AKAZE") == 0 || descriptorType.compare("SIFT") == 0)) ||
                    (detectorType.compare("ORB") == 0 &&
@@ -305,12 +303,12 @@ int main(int argc, const char *argv[])
         vector<cv::KeyPoint> keypoints; // create empty feature list for current image
 //        string detectorType = "SHITOMASI";
 //        string detectorType = "HARRIS";
-//        string detectorType = "FAST";
+        string detectorType = "FAST";
 //        string detectorType = "BRISK";
 //        string detectorType = "ORB";
 //        string detectorType = "AKAZE";
 //        string detectorType = "FREAK";    // Using this causes a 'Feature Not Implemented' exception.
-        string detectorType = "SIFT";
+//        string detectorType = "SIFT";
 
         //// STUDENT ASSIGNMENT
         //// TASK MP.2 -> add the following keypoint detectors in file matching2D.cpp and enable string-based selection based on detectorType
@@ -387,12 +385,13 @@ int main(int argc, const char *argv[])
         //// -> BRIEF, ORB, FREAK, AKAZE, SIFT
 
         cv::Mat descriptors;
-        string descriptorType = "BRISK"; // BRIEF, ORB, FREAK, AKAZE, SIFT
-    //    string descriptorType = "BRIEF"; 
-    //    string descriptorType = "ORB"; 
-    //    string descriptorType = "FREAK"; 
-    //    string descriptorType = "SIFT"; 
-        descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
+    //    string descType = "BRISK"; // BRIEF, ORB, FREAK, AKAZE, SIFT
+        string descType = "BRIEF"; 
+    //    string descType = "ORB"; 
+    //    string descType = "AKAZE"; 
+    //    string descType = "FREAK"; 
+    //    string descType = "SIFT"; 
+        descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descType);
         //// EOF STUDENT ASSIGNMENT
 
         // push descriptors for current frame to end of data buffer
@@ -413,10 +412,23 @@ int main(int argc, const char *argv[])
             //// STUDENT ASSIGNMENT
             //// TASK MP.5 -> add FLANN matching in file matching2D.cpp
             //// TASK MP.6 -> add KNN match selection and perform descriptor distance ratio filtering with t=0.8 in file matching2D.cpp
+            if (descType.compare("SIFT") == 0)
+            {
+                cv::Mat descSource = (dataBuffer.end() - 2)->descriptors.clone();
+                cv::Mat descRef = (dataBuffer.end() - 1)->descriptors.clone();
+                descSource.convertTo(descSource, CV_32F);
+                descRef.convertTo(descRef, CV_32F);
 
-            matchDescriptors((dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints,
-                             (dataBuffer.end() - 2)->descriptors, (dataBuffer.end() - 1)->descriptors,
-                             matches, descriptorType, matcherType, selectorType);
+                matchDescriptors((dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints,
+                                 descSource, descRef,
+                                 matches, descriptorType, matcherType, selectorType);
+            }
+            else
+            {
+                matchDescriptors((dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints,
+                                (dataBuffer.end() - 2)->descriptors, (dataBuffer.end() - 1)->descriptors,
+                                matches, descriptorType, matcherType, selectorType);
+            }
 
             //// EOF STUDENT ASSIGNMENT
 
