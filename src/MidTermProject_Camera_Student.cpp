@@ -19,7 +19,7 @@
 
 using namespace std;
 
-#define RUN_AS_PERFORMANCE_EVALUATION
+//#define RUN_AS_PERFORMANCE_EVALUATION
 
 #ifdef RUN_AS_PERFORMANCE_EVALUATION
 std::tuple<std::vector<int>, std::vector<double>, std::vector<double>> ProcessImages(string & detectorType, string &descType)
