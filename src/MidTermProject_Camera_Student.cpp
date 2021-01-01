@@ -22,7 +22,7 @@ using namespace std;
 #define RUN_AS_PERFORMANCE_EVALUATION
 
 #ifdef RUN_AS_PERFORMANCE_EVALUATION
-std::vector<int> ProcessImages(string & detectorType, string &descriptorType, ofstream &resultsFile)
+std::tuple<std::vector<int>, std::vector<double>, std::vector<double>> ProcessImages(string & detectorType, string &descriptorType)
 {
     /* INIT VARIABLES AND DATA STRUCTURES */
 
@@ -39,11 +39,12 @@ std::vector<int> ProcessImages(string & detectorType, string &descriptorType, of
 
     // misc
     int dataBufferSize = 2;       // no. of images which are held in memory (ring buffer) at the same time
-//    vector<DataFrame> dataBuffer; // list of data frames which are held in memory at the same time
     RingBuffer<DataFrame> dataBuffer(dataBufferSize);
     bool bVis = false;            // visualize results
     /* MAIN LOOP OVER ALL IMAGES */
-    std::vector<int> output;
+    std::vector<int> matchCounts;
+    std::vector<double> detectorTimes;
+    std::vector<double> descriptorTimes;
     for (size_t imgIndex = 0; imgIndex <= imgEndIndex - imgStartIndex; imgIndex++)
     {
         /* LOAD IMAGE INTO BUFFER */
@@ -58,25 +59,16 @@ std::vector<int> ProcessImages(string & detectorType, string &descriptorType, of
         img = cv::imread(imgFullFilename);
         cv::cvtColor(img, imgGray, cv::COLOR_BGR2GRAY);
 
-        //// STUDENT ASSIGNMENT
-        //// TASK MP.1 -> replace the following code with ring buffer of size dataBufferSize
-
         // push image into data frame buffer
         DataFrame frame;
         frame.cameraImg = imgGray;
         dataBuffer.push_back(frame);
-
-        //// EOF STUDENT ASSIGNMENT
-//        cout << "#1 : LOAD IMAGE INTO BUFFER done" << endl;
 
         /* DETECT IMAGE KEYPOINTS */
 
         // extract 2D keypoints from current image
         vector<cv::KeyPoint> keypoints; // create empty feature list for current image
 
-        //// STUDENT ASSIGNMENT
-        //// TASK MP.2 -> add the following keypoint detectors in file matching2D.cpp and enable string-based selection based on detectorType
-        //// -> HARRIS, FAST, BRISK, ORB, AKAZE, SIFT
         double t = (double)cv::getTickCount();
         if (detectorType.compare("SHITOMASI") == 0)
         {
@@ -94,19 +86,13 @@ std::vector<int> ProcessImages(string & detectorType, string &descriptorType, of
             }            
         }
         t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-        cout << detectorType << " KeyPoint Detection in " << 1000 * t / 1.0 << " ms" << endl;
-        resultsFile << detectorType << " KeyPoint Detection in " << 1000 * t / 1.0 << " ms" << endl;
+        detectorTimes.push_back(1000 * t / 1.0);
 
-        //// EOF STUDENT ASSIGNMENT
-
-        //// STUDENT ASSIGNMENT
-        //// TASK MP.3 -> only keep keypoints on the preceding vehicle
 
         // only keep keypoints on the preceding vehicle
         bool bFocusOnVehicle = true;
         //                   x    y    wid  Hei
         cv::Rect vehicleRect(535, 180, 180, 150);
-//        cv::Rect vehicleRect(550, 180, 150, 150);
         if (bFocusOnVehicle)
         {
             std::vector<cv::KeyPoint> filtered;
@@ -122,10 +108,6 @@ std::vector<int> ProcessImages(string & detectorType, string &descriptorType, of
 
             keypoints = filtered;
         }
-
-//        cout << "No Of KeyPoints Found in Image # " << imgIndex + 1 << " Pts = " << keypoints.size() << endl;
-
-        //// EOF STUDENT ASSIGNMENT
 
         // optional : limit number of keypoints (helpful for debugging and learning)
         bool bLimitKpts = false;
@@ -143,26 +125,15 @@ std::vector<int> ProcessImages(string & detectorType, string &descriptorType, of
 
         // push keypoints and descriptor for current frame to end of data buffer
         (dataBuffer.end() - 1)->keypoints = keypoints;
-//        cout << "#2 : DETECT KEYPOINTS done" << endl;
-
-        /* EXTRACT KEYPOINT DESCRIPTORS */
-
-        //// STUDENT ASSIGNMENT
-        //// TASK MP.4 -> add the following descriptors in file matching2D.cpp and enable string-based selection based on descriptorType
-        //// -> BRIEF, ORB, FREAK, AKAZE, SIFT
 
         cv::Mat descriptors;
         t = (double)cv::getTickCount();
         descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
         t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-        resultsFile << descriptorType << " descriptor extraction in " << 1000 * t / 1.0 << " ms" << endl;
-
-        //// EOF STUDENT ASSIGNMENT
+        descriptorTimes.push_back(1000 * t / 1.0);
 
         // push descriptors for current frame to end of data buffer
         (dataBuffer.end() - 1)->descriptors = descriptors;
-
-//        cout << "#3 : EXTRACT DESCRIPTORS done" << endl;
 
         if (dataBuffer.size() > 1) // wait until at least two images have been processed
         {
@@ -174,10 +145,6 @@ std::vector<int> ProcessImages(string & detectorType, string &descriptorType, of
             string descriptorType = "DES_BINARY"; // DES_BINARY, DES_HOG
             string selectorType = "SEL_KNN";       // SEL_NN, SEL_KNN
 
-            //// STUDENT ASSIGNMENT
-            //// TASK MP.5 -> add FLANN matching in file matching2D.cpp
-            //// TASK MP.6 -> add KNN match selection and perform descriptor distance ratio filtering with t=0.8 in file matching2D.cpp
-
             matchDescriptors((dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints,
                              (dataBuffer.end() - 2)->descriptors, (dataBuffer.end() - 1)->descriptors,
                              matches, descriptorType, matcherType, selectorType);
@@ -187,9 +154,7 @@ std::vector<int> ProcessImages(string & detectorType, string &descriptorType, of
             // store matches in current data frame
             (dataBuffer.end() - 1)->kptMatches = matches;
 
-            output.push_back(matches.size());
-
-//            cout << "#4 : MATCH KEYPOINT DESCRIPTORS done" << endl;
+            matchCounts.push_back(matches.size());
 
             // visualize matches between current and previous image
             bVis = false;
@@ -213,7 +178,7 @@ std::vector<int> ProcessImages(string & detectorType, string &descriptorType, of
 
     } // eof loop over all images
 
-    return output;
+    return std::tuple<std::vector<int>, std::vector<double>, std::vector<double>>(matchCounts, detectorTimes, descriptorTimes);
 }
 #endif
 
@@ -247,9 +212,12 @@ int main(int argc, const char *argv[])
     std::vector<string> descriptorTypes = {"BRISK", "BRIEF", "ORB", "AKAZE", "SIFT"};   // Missing FREAK as I'm getting 'Not Implemented' exception
     ofstream resultsFile;
     resultsFile.open("Results.dat");
+    cout << "Detector Type, Descriptor Type" << endl;
+    resultsFile << "Detector Type, Descriptor Type" << endl;
     for (std::vector<string>::iterator detectorIt = detectorTypes.begin(); detectorIt != detectorTypes.end(); ++detectorIt)
     {
         string detectorType = *detectorIt;
+     
         for (std::vector<string>::iterator descriptorIt = descriptorTypes.begin(); descriptorIt != descriptorTypes.end(); ++descriptorIt)
         {
             string descriptorType = *descriptorIt;
@@ -267,14 +235,35 @@ int main(int argc, const char *argv[])
                    (descriptorType.compare("ORB") == 0 || descriptorType.compare("AKAZE") == 0 || descriptorType.compare("SIFT") == 0)))
                    )
             {
-                std::vector<int> matchCount = ProcessImages(detectorType, descriptorType, resultsFile);
-                cout << "Detector = " << detectorType << ", Descriptor = " << descriptorType << ", Frame Matches = ";
-                resultsFile << "Detector = " << detectorType << ", Descriptor = " << descriptorType << ", Frame Matches = ";
+                std::tuple<std::vector<int>, std::vector<double>, std::vector<double>> results = ProcessImages(detectorType, descriptorType);
+
+                cout << detectorType << ", " << descriptorType << ", ";
+                resultsFile << detectorType << ", " << descriptorType << ", ";
+                std::vector<int> matchCount = get<0>(results);
                 for (std::vector<int>::iterator it = matchCount.begin(); it != matchCount.end(); ++it)
                 {
                     cout << *it << ", ";
                     resultsFile << *it << ", ";
                 }
+
+                cout << "Detector Times, ";
+                resultsFile << "Detector Times, ";
+                std::vector<double> detectorTimes = get<1>(results);
+                for (std::vector<double>::iterator it = detectorTimes.begin(); it != detectorTimes.end(); ++it)
+                {
+                    cout << *it << ", ";
+                    resultsFile << *it << ", ";
+                }
+
+                cout << "Descriptor Times, ";
+                resultsFile << "Descriptor Times, ";
+                std::vector<double> descriptorTimes = get<2>(results);
+                for (std::vector<double>::iterator it = descriptorTimes.begin(); it != descriptorTimes.end(); ++it)
+                {
+                    cout << *it << ", ";
+                    resultsFile << *it << ", ";
+                }
+
                 cout << endl;
                 resultsFile << endl;
             }
